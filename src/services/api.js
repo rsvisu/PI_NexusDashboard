@@ -11,5 +11,5 @@ export async function getConversations() {
 
 export async function getConversation(id) {
   const { data } = await api.get(`/api/conversations/${id}`)
-  return data.messages
+  return data
 }
