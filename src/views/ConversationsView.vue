@@ -30,7 +30,7 @@ onMounted(async () => {
   <div>
     <h1 class="text-2xl font-semibold text-gray-800 mb-6">Conversaciones</h1>
 
-    <!-- Buscador -->
+    <!-- Search -->
     <div class="mb-4">
       <InputText v-model="search" placeholder="Buscar en conversaciones..." class="w-full" />
     </div>
@@ -39,7 +39,6 @@ onMounted(async () => {
     <p v-if="error" class="text-red-500 mb-4">{{ error }}</p>
 
     <!-- Tabla -->
-    <!-- TODO: Cambiar los colores de la tabla a la marca -->
     <DataTable
       :value="conversations"
       :global-filter-fields="['id', 'first_message']"
@@ -51,34 +50,41 @@ onMounted(async () => {
       empty-message="No hay conversaciones todavía"
       class="shadow-sm"
     >
+      <!-- ID -->
       <Column field="id" header="ID">
         <template #body="{ data }">
           {{ data.id }}
         </template>
       </Column>
 
+      <!-- Started At -->
       <Column field="started_at" header="Fecha y hora">
         <template #body="{ data }">
           {{ new Date(data.started_at).toLocaleString("es-ES") }}
         </template>
       </Column>
 
+      <!-- First Message -->
       <Column field="first_message" header="Primer mensaje">
         <template #body="{ data }">
           <span class="text-gray-700">{{ data.first_message ?? "—" }}</span>
         </template>
       </Column>
 
+      <!-- Message Count -->
       <Column field="message_count" header="Mensajes" style="width: 100px; text-align: center" />
 
+      <!-- Actions -->
       <Column header="Acciones" style="width: 100px">
         <template #body="{ data }">
           <div class="flex gap-2">
+            <!-- Button View -->
             <RouterLink :to="`/conversaciones/${data.id}`">
               <Button severity="secondary" text rounded>
                 <template #icon><EyeIcon /></template>
               </Button>
             </RouterLink>
+            <!-- Button Delete -->
             <Button severity="danger" text rounded>
               <template #icon><TrashIcon /></template>
             </Button>
