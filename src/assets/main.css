@@ -1,7 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #e7751e;
+  /* - Colores corporativos: */
+  --color-brand: #e7751e; /* Naranja principal de Los Enlaces */
   --color-brand-light: #f3944a;
   --color-brand-dark: #f07619;
+
+  /* - Textos */
+  --color-main: #1f2937; /* Texto oscuro para los mensajes */
+  --color-muted: #6b7280; /* Letra pequeña para fuentes y feedback */
+  --color-inverse: #ffffff; /* Texto blanco (para la cabecera y botones naranjas) */
 }
