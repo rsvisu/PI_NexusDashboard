@@ -13,8 +13,11 @@
   },
   "dependencies": {
     "@primeuix/themes": "^2.0.3",
+    "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.3.0",
     "axios": "^1.16.0",
+    "dompurify": "^3.4.2",
+    "marked": "^18.0.3",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.5",

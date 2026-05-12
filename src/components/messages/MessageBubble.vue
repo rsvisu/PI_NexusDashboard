@@ -1,5 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 import CopyIcon from "~icons/material-symbols/content-copy-rounded";
 import BotIcon from "~icons/material-symbols/smart-toy-outline";
 import PersonIcon from "~icons/material-symbols/person-outline";
@@ -29,19 +31,18 @@ const bubbleClasses = computed(() =>
   isUserMessage.value ? "self-end items-end" : "self-start items-start",
 );
 
-const rowClasses = computed(() =>
-  isUserMessage.value ? "flex-row-reverse" : "flex-row",
-);
+const rowClasses = computed(() => (isUserMessage.value ? "flex-row-reverse" : "flex-row"));
 
-const avatarClasses = computed(() =>
-  isUserMessage.value ? "bg-brand" : "bg-gray-400",
-);
+const avatarClasses = computed(() => (isUserMessage.value ? "bg-brand" : "bg-gray-400"));
 
 const messageClasses = computed(() =>
   isUserMessage.value
     ? "bg-brand text-white rounded-br-sm"
     : "bg-gray-100 text-gray-800 rounded-bl-sm",
 );
+
+// pl-11/pr-11 = ancho avatar (w-9 = 36px) + gap (gap-2 = 8px) = 44px
+const timeRowClasses = computed(() => (isUserMessage.value ? "justify-end pr-11" : "pl-11"));
 
 // ## Funciones:
 // Funcion copiar mensaje
@@ -57,6 +58,11 @@ async function copyMessage() {
     copied.value = false;
   }
 }
+
+// Convierte el markdown a HTML para mostrarlo con estilos
+const renderedMessage = computed(() => {
+  return DOMPurify.sanitize(marked.parse(props.message));
+});
 
 // Funcion para formatear la hora del mensaje
 function formatTime(dateStr) {
@@ -78,31 +84,31 @@ function formatTime(dateStr) {
       </div>
       <!-- Message-->
       <div class="wrap-break-word px-4 py-2 rounded-xl shadow-sm" :class="messageClasses">
-        {{ props.message }}
+        <!-- Bot message -->
+        <div
+          v-if="!isUserMessage"
+          v-html="renderedMessage"
+          class="prose max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+        />
+        <!-- User message -->
+        <span v-else>{{ message }}</span>
       </div>
     </div>
 
     <!-- Time + copy button -->
-    <div
-      class="flex justify-between gap-1 mt-1 px-1 text-xs w-full"
-      :class="rowClasses"
-    >
-      <!-- Time -->
-      <span class="text-gray-400">{{ formatTime(props.date) }}</span>
+    <div class="flex items-center gap-1 p-3 text-sm" :class="timeRowClasses">
       <!-- Copy button -->
-      <div
-        class="flex items-center gap-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity text-muted"
+      <button
+        type="button"
+        tabindex="-1"
+        class="hidden group-hover:flex items-center rounded hover:bg-gray-200 transition-colors cursor-pointer text-muted"
+        @click="copyMessage"
       >
-        <button
-          type="button"
-          tabindex="-1"
-          class="p-1 rounded hover:bg-gray-200 transition-colors cursor-pointer"
-          @click="copyMessage"
-        >
-          <CopyIcon class="size-4" />
-        </button>
-        <span v-if="copied" class="text-muted">Copiado</span>
-      </div>
+        <CopyIcon class="size-4" />
+      </button>
+      <span v-if="copied" class="text-muted">Copiado</span>
+      <!-- Time -->
+      <span v-else class="text-gray-400">{{ formatTime(props.date) }}</span>
     </div>
   </div>
 </template>
