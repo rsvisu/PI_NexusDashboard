@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -8,8 +7,6 @@ import InputText from "primevue/inputtext";
 import EyeIcon from "~icons/material-symbols/visibility-outline";
 import TrashIcon from "~icons/material-symbols/delete-outline";
 import { getConversations } from "@/services/api";
-
-const router = useRouter();
 
 const conversations = ref([]);
 const search = ref("");
@@ -42,6 +39,7 @@ onMounted(async () => {
     <p v-if="error" class="text-red-500 mb-4">{{ error }}</p>
 
     <!-- Tabla -->
+    <!-- TODO: Cambiar los colores de la tabla a la marca -->
     <DataTable
       :value="conversations"
       :global-filter-fields="['id', 'first_message']"
@@ -76,14 +74,11 @@ onMounted(async () => {
       <Column header="Acciones" style="width: 100px">
         <template #body="{ data }">
           <div class="flex gap-2">
-            <Button
-              severity="secondary"
-              text
-              rounded
-              @click="router.push(`/conversaciones/${data.id}`)"
-            >
-              <template #icon><EyeIcon /></template>
-            </Button>
+            <RouterLink :to="`/conversaciones/${data.id}`">
+              <Button severity="secondary" text rounded>
+                <template #icon><EyeIcon /></template>
+              </Button>
+            </RouterLink>
             <Button severity="danger" text rounded>
               <template #icon><TrashIcon /></template>
             </Button>
