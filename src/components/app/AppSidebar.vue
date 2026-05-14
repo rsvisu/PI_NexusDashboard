@@ -1,9 +1,18 @@
 <script setup>
 import { RouterLink } from "vue-router";
+import { useAuthStore } from "@/stores/auth.js";
 import logoFace from "@/assets/logo.svg";
 import HomeIcon from '~icons/material-symbols/home-outline'
 import BookIcon from '~icons/material-symbols/menu-book-outline'
 import ChatIcon from '~icons/material-symbols/chat-bubble-outline'
+
+// ## Stores:
+const authStore = useAuthStore();
+
+// ## Funciones:
+async function handleLogout() {
+  await authStore.logout();
+}
 </script>
 
 <template>
@@ -38,9 +47,13 @@ import ChatIcon from '~icons/material-symbols/chat-bubble-outline'
     </nav>
 
     <!-- Footer -->
-    <div class="px-3 py-4 border-t border-slate-700">
+    <div class="px-3 py-4 border-t border-slate-700 flex flex-col gap-2">
+      <p v-if="authStore.user" class="text-xs text-slate-400 px-2 truncate">
+        {{ authStore.user.email }}
+      </p>
       <button
         class="w-full text-sm py-2 px-3 rounded-lg bg-brand text-white font-medium hover:bg-brand-dark cursor-pointer transition-colors"
+        @click="handleLogout"
       >
         Cerrar sesión
       </button>
