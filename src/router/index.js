@@ -1,8 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../stores/auth.js'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue'),
+    },
     {
       path: '/',
       name: 'home',
@@ -19,6 +25,22 @@ const router = createRouter({
       component: () => import('../views/ConversationDetailView.vue'),
     },
   ],
+})
+
+// Guard global: protege todas las rutas excepto /login.
+// Como initialize() ya corrió en main.js antes del mount, la store de auth
+// está sincronizada con la sesión real en este punto.
+router.beforeEach((to) => {
+  if (to.name === 'login') {
+    return true
+  }
+
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    return { name: 'login' }
+  }
+
+  return true
 })
 
 export default router
