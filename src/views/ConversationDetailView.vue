@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import { getConversation } from "@/services/api";
+import ApiService from "@/services/api";
 import MessageBubble from "@/components/messages/MessageBubble.vue";
 import ArrowBackIcon from "~icons/material-symbols/arrow-back";
 import CalendarIcon from "~icons/material-symbols/calendar-today";
@@ -29,7 +29,7 @@ function formatDate(dateStr) {
 onMounted(async () => {
   isLoading.value = true;
   try {
-    const data = await getConversation(route.params.id);
+    const data = await ApiService.getConversation(route.params.id);
     conversation.value = data.conversation;
     messages.value = data.messages;
   } catch (e) {

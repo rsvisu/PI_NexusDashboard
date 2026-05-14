@@ -6,7 +6,7 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import EyeIcon from "~icons/material-symbols/visibility-outline";
 import TrashIcon from "~icons/material-symbols/delete-outline";
-import { getConversations } from "@/services/api";
+import ApiService from "@/services/api";
 
 const conversations = ref([]);
 const search = ref("");
@@ -16,7 +16,7 @@ const error = ref(null);
 onMounted(async () => {
   isLoading.value = true;
   try {
-    conversations.value = await getConversations();
+    conversations.value = await ApiService.getConversations();
   } catch (e) {
     error.value = "No se pudieron cargar las conversaciones";
     console.error(e);
