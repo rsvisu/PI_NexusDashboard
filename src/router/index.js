@@ -49,14 +49,14 @@ const router = createRouter({
 router.beforeEach((to, from) => {
   const authStore = useAuthStore()
 
-  // Si se esta autenticado, redirigir de login a home
-  if (to.name === 'login' && authStore.isAuthenticated) {
-    return { name: 'home' }
+  // Si la ruta requiere autenticación y no se autenticado, redirigir a login
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return { name: 'login' }
   }
 
-  // Si no está autenticado, redirigir a login
-  if (!authStore.isAuthenticated) {
-    return { name: 'login' }
+  // Si se esta autenticado y se va a login, redirigir a home
+  if (to.name === 'login' && authStore.isAuthenticated) {
+    return { name: 'home' }
   }
 
   // En cualquier otro caso, permitir la ruta
