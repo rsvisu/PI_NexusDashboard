@@ -10,10 +10,22 @@ import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/auth.js'
 
+// # App:
 const app = createApp(App)
 
+// ## Pinia:
 app.use(createPinia())
+
+// Inicializamos el authStore antes del
+// router para que el beforeEach del router
+// tenga acceso a la sesión del usuario
+const authStore = useAuthStore()
+await authStore.initialize()
+
+// ## Router:
 app.use(router)
+
+// ## PrimeVue:
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
@@ -22,13 +34,8 @@ app.use(PrimeVue, {
     }
   }
 })
+// Cambiamos el color primario de PrimeVue al color de la marca
+updatePrimaryPalette(palette('#e7751e'))
 
-updatePrimaryPalette(palette('#e7751e')) // Cambiamos el color primario de PrimeVue al color de la marca
-
-// Inicializamos la sesión antes de montar la app:
-// así, cuando el guard del router dispare en la primera navegación, 
-// la store ya tendrá el estado real
-const authStore = useAuthStore()
-await authStore.initialize()
-
+// ## Montaje:
 app.mount('#app')
