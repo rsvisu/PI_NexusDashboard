@@ -26,7 +26,7 @@ const props = defineProps({
 const copied = ref(false);
 const isUserMessage = computed(() => props.role === "user");
 
-// ## Clases dinamicas:
+// ## Clases dinámicas:
 const bubbleClasses = computed(() =>
   isUserMessage.value ? "self-end items-end" : "self-start items-start",
 );
@@ -45,12 +45,12 @@ const messageClasses = computed(() =>
 const timeRowClasses = computed(() => (isUserMessage.value ? "justify-end pr-11" : "pl-11"));
 
 // ## Funciones:
-// Funcion copiar mensaje
+// Función copiar mensaje
 async function copyMessage() {
   try {
     await navigator.clipboard.writeText(props.message);
     copied.value = true;
-    // Espera de 1200ms para eliminar el mensaje de confirmacion
+    // Espera de 1200ms para eliminar el mensaje de confirmación
     globalThis.setTimeout(() => {
       copied.value = false;
     }, 1200);
@@ -64,7 +64,7 @@ const renderedMessage = computed(() => {
   return DOMPurify.sanitize(marked.parse(props.message));
 });
 
-// Funcion para formatear la hora del mensaje
+// Función para formatear la hora del mensaje
 function formatTime(dateStr) {
   return new Date(dateStr).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 }

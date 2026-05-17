@@ -2,9 +2,9 @@
 import { RouterLink } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
 import logoFace from "@/assets/logo.svg";
-import HomeIcon from '~icons/material-symbols/home-outline'
-import BookIcon from '~icons/material-symbols/menu-book-outline'
-import ChatIcon from '~icons/material-symbols/chat-bubble-outline'
+import HomeIcon from "~icons/material-symbols/home-outline";
+import BookIcon from "~icons/material-symbols/menu-book-outline";
+import ChatIcon from "~icons/material-symbols/chat-bubble-outline";
 
 // ## Stores:
 const authStore = useAuthStore();
@@ -23,7 +23,7 @@ async function handleLogout() {
       <span class="text-lg font-semibold tracking-wide">Nexus</span>
     </div>
 
-    <!-- Navegación -->
+    <!-- Navigation -->
     <nav class="flex-1 px-3 py-4 flex flex-col gap-5 overflow-y-auto">
       <div>
         <p class="text-xs text-slate-400 uppercase px-2 mb-1">Principal</p>

@@ -8,11 +8,13 @@ import EyeIcon from "~icons/material-symbols/visibility-outline";
 import TrashIcon from "~icons/material-symbols/delete-outline";
 import ApiService from "@/services/api";
 
+// ## Variables:
 const conversations = ref([]);
 const search = ref("");
 const isLoading = ref(false);
 const error = ref(null);
 
+// ## Ciclo de vida:
 onMounted(async () => {
   isLoading.value = true;
   try {
