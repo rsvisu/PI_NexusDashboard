@@ -27,7 +27,7 @@ async function handleLogout() {
     <nav class="flex-1 px-3 py-4 flex flex-col gap-5 overflow-y-auto">
       <div>
         <p class="text-xs text-slate-400 uppercase px-2 mb-1">Principal</p>
-        <RouterLink to="/" class="nav-link">
+        <RouterLink to="/" class="nav-link" active-class="" exact-active-class="router-link-active">
           <HomeIcon />
           Inicio
         </RouterLink>
