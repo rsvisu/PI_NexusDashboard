@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
+import DefaultLayout from '../layouts/DefaultLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,28 +11,38 @@ const router = createRouter({
       component: () => import('../views/LoginView.vue'),
     },
     {
+      // Ruta principal de la App:
+      // Todas las rutas hijas se renderizan dentro de
+      // del <RouterView /> de DefaultLayout
       path: '/',
-      name: 'home',
-      component: () => import('../views/HomeView.vue'),
-    },
-    {
-      path: '/conversaciones',
-      name: 'conversations',
-      component: () => import('../views/ConversationsView.vue'),
-    },
-    {
-      path: '/conversaciones/:id',
-      name: 'conversation-detail',
-      component: () => import('../views/ConversationDetailView.vue'),
+      component: DefaultLayout,
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: () => import('../views/HomeView.vue'),
+        },
+        {
+          path: 'conversaciones',
+          name: 'conversations',
+          component: () => import('../views/ConversationsView.vue'),
+        },
+        {
+          path: 'conversaciones/:id',
+          name: 'conversation-detail',
+          component: () => import('../views/ConversationDetailView.vue'),
+        },
+      ],
     },
   ],
 })
 
-// Guard global: protege todas las rutas excepto /login.
-// Como initialize() ya corrió en main.js antes del mount, la store de auth
-// está sincronizada con la sesión real en este punto.
+// Actúa antes de resolver las rutas y decide según si
+// el usuario esta autenticado si le deja seguir o le
+// redirige al login
 router.beforeEach((to) => {
-  if (to.name === 'login') {
+  if (!to.meta.requiresAuth) {
     return true
   }
 
