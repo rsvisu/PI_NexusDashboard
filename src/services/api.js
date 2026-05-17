@@ -12,58 +12,62 @@ const baseUrl = config.api.url
  * Realiza una petición HTTP al backend.
  */
 async function request(method, path, body) {
-    const headers = {}
-    const sessionResponse = await supabase.auth.getSession()
-    const session = sessionResponse.data.session
+  const headers = {}
+  const sessionResponse = await supabase.auth.getSession()
+  const session = sessionResponse.data.session
 
-    if (session) {
-        headers.Authorization = `Bearer ${session.access_token}`
+  if (session) {
+    headers.Authorization = `Bearer ${session.access_token}`
+  }
+
+  const url = baseUrl + path
+
+  try {
+    let response
+    switch (method) {
+      case 'GET':
+        response = await axios.get(url, { headers })
+        break
+      case 'POST':
+        response = await axios.post(url, body, { headers })
+        break
+      case 'DELETE':
+        response = await axios.delete(url, { headers })
+        break
     }
-
-    const url = baseUrl + path
-
-    try {
-        let response
-        if (method === 'GET') {
-            response = await axios.get(url, { headers })
-        } else if (method === 'POST') {
-            response = await axios.post(url, body, { headers })
-        } else if (method === 'DELETE') {
-            response = await axios.delete(url, { headers })
-        }
-        return response.data
-    } catch (error) {
-        if (error.response && error.response.status === 401) {
-            const authStore = useAuthStore()
-            await authStore.logout()
-        }
-        throw error
+    return response.data
+  } catch (error) {
+    if (error.response && error.response.status === 401) {
+      const authStore = useAuthStore()
+      await authStore.logout()
     }
+    throw error
+  }
 }
 
 // ## Wrappers:
 function get(path) {
-    return request('GET', path)
+  return request('GET', path)
 }
 
 function post(path, body) {
-    return request('POST', path, body)
+  return request('POST', path, body)
 }
 
 function del(path) {
-    return request('DELETE', path)
+  return request('DELETE', path)
 }
 
 // # Servicio:
 class ApiService {
-    static async getConversations() {
-        const data = await get('/api/conversation')
-        return data.conversations
-    }
+  static async getConversations() {
+    const data = await get('/api/conversation')
+    return data.conversations
+  }
 
-    static async getConversation(id) {
-        return get(`/api/conversation/${id}`)
-    }
+  static async getConversation(id) {
+    return get(`/api/conversation/${id}`)
+  }
 }
 
 export default ApiService
