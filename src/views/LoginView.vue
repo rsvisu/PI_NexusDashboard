@@ -6,6 +6,7 @@ import InputText from "primevue/inputtext";
 import Password from "primevue/password";
 import Button from "primevue/button";
 import Message from "primevue/message";
+import logo from "../assets/logo.svg";
 
 // ## Router:
 const router = useRouter();
@@ -40,7 +41,11 @@ async function handleLogin() {
       class="bg-white rounded-2xl shadow-md p-8 w-full max-w-sm flex flex-col gap-4"
       @submit.prevent="handleLogin"
     >
-      <h1 class="text-2xl font-semibold text-center mb-2">Nexus — Acceso admin</h1>
+      <div class="flex flex-col items-center gap-2 mb-2">
+        <img :src="logo" alt="Nexus" class="w-16 h-16" />
+        <h1 class="text-2xl font-semibold">Nexus</h1>
+        <p class="text-sm text-gray-500">Panel de administración</p>
+      </div>
 
       <div class="flex flex-col gap-1">
         <label for="email" class="text-sm">Email</label>
