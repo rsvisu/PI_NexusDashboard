@@ -6,12 +6,13 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      // ## Login:
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
     },
     {
-      // Ruta principal de la App:
+      // ## App:
       // Todas las rutas hijas se renderizan dentro de
       // del <RouterView /> de DefaultLayout
       path: '/',
@@ -35,22 +36,30 @@ const router = createRouter({
         },
       ],
     },
+    {
+      // ## 404:
+      // Captura cualquier ruta no definida arriba
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue'),
+    },
   ],
 })
 
-// Actúa antes de resolver las rutas y decide según si
-// el usuario esta autenticado si le deja seguir o le
-// redirige al login
-router.beforeEach((to) => {
-  if (!to.meta.requiresAuth) {
-    return true
+router.beforeEach((to, from) => {
+  const authStore = useAuthStore()
+
+  // Si se esta autenticado, redirigir de login a home
+  if (to.name === 'login' && authStore.isAuthenticated) {
+    return { name: 'home' }
   }
 
-  const authStore = useAuthStore()
+  // Si no está autenticado, redirigir a login
   if (!authStore.isAuthenticated) {
     return { name: 'login' }
   }
 
+  // En cualquier otro caso, permitir la ruta
   return true
 })
 
