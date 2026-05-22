@@ -10,11 +10,10 @@ const baseUrl = config.api.url
 
 /**
  * Realiza una petición HTTP al backend con el token de sesión adjunto:
- *
- * Adjunta el access_token de Supabase como Bearer en Authorization.
- * Devuelve directamente response.data.
- * Si el backend responde con un status de error, axios lanza una excepción.
- * El error 401 (unauthorized) hace que se cierre la sesión local para que
+ * 1. Adjunta el access_token de Supabase como Bearer en Authorization.
+ * 2. Devuelve directamente response.data.
+ * 3. Si el backend responde con un status de error, axios lanza una excepción.
+ * 4. El error 401 (unauthorized) hace que se cierre la sesión local para que
  * el router redirija al login.
  */
 async function request(method, path, body) {
@@ -86,6 +85,82 @@ class ApiService {
 
   static async getConversation(id) {
     return get(`/api/conversation/${id}`)
+  }
+
+  // ## Documentos:
+  static async getDocuments() {
+    const data = await get('/api/document')
+    return data.documents
+  }
+
+  static async getDocumentDownloadUrl(id) {
+    return get(`/api/document/${id}/url`)
+  }
+
+  /**
+   * Sube un archivo al backend.
+   *
+   * @param {*} file
+   * @param {*} options - Campos opcionales (undefined -> null; null -> string de "null", al enviarse t0do como texto en multipart/form-data)
+   * @returns
+   */
+  static async uploadDocument(file, { folder_id, expires_at }) {
+    // Construimos el multipart/form-data para poder enviar el archivo binario junto con los campos opcionales
+    const formData = new FormData()
+
+    formData.append('file', file)
+
+    // Solo añadimos los campos opcionales si vienen definidos
+    // para que el backend los trate como undefined y los ignore
+    if (folder_id) formData.append('folder_id', folder_id)
+    if (expires_at) formData.append('expires_at', expires_at)
+
+    // axios detecta el FormData y añade el Content-Type con su boundary
+    const data = await post('/api/document/file', formData)
+    return data.document
+  }
+
+  /**
+   * Actualiza un documento. Los campos undefined son
+   * ignorados por el backend y no se modifican en la BD.
+   *
+   * @param {*} id
+   * @param {*} options - Campos a actualizar (undefined -> no modificar; null -> NULL en BD)
+   * @returns
+   */
+  static async updateDocument(id, { name, folder_id, expires_at }) {
+    const data = await patch(`/api/document/${id}`, { name, folder_id, expires_at })
+    return data.document
+  }
+
+  static async toggleDocumentActive(id, is_active) {
+    const data = await patch(`/api/document/${id}/active`, { is_active })
+    return data.document
+  }
+
+  static async deleteDocument(id) {
+    return del(`/api/document/${id}`)
+  }
+
+  // ## Carpetas:
+  static async getFolders() {
+    const data = await get('/api/folder')
+    return data.folders
+  }
+
+  static async createFolder(name) {
+    const data = await post('/api/folder', { name })
+    return data.folder
+  }
+
+  static async updateFolder(id, name) {
+    const data = await patch(`/api/folder/${id}`, { name })
+    return data.folder
+  }
+
+  // Al borrar una carpeta los documentos que estaban dentro pasan a folder_id = NULL
+  static async deleteFolder(id) {
+    return del(`/api/folder/${id}`)
   }
 }
 
