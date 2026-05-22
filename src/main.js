@@ -3,6 +3,8 @@ import './assets/main.css'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import ConfirmationService from 'primevue/confirmationservice'
+import ToastService from 'primevue/toastservice'
 import Aura from '@primeuix/themes/aura'
 import { updatePrimaryPalette, palette } from '@primeuix/themes'
 
@@ -36,6 +38,10 @@ app.use(PrimeVue, {
 })
 // Cambiamos el color primario de PrimeVue al color de la marca
 updatePrimaryPalette(palette('#e7751e'))
+
+// Servicios de PrimeVue para usar useConfirm() y useToast() en cualquier componente
+app.use(ConfirmationService)
+app.use(ToastService)
 
 // ## Montaje:
 app.mount('#app')
