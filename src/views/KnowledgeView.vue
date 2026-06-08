@@ -33,8 +33,12 @@ const confirm = useConfirm();
 const folders = ref([]);
 const documents = ref([]);
 const activeFolderId = ref(null); // null = "todas las fuentes"
-const search = ref("");
 const isLoading = ref(false);
+
+// El buscador del DataTable se controla por filters.global.value
+const filters = ref({
+  global: { value: null, matchMode: "contains" },
+});
 
 // ## Estado de los diálogos:
 const showUploadDialog = ref(false);
@@ -437,7 +441,11 @@ onMounted(loadAll);
             <InputIcon>
               <SearchIcon class="text-gray-400" />
             </InputIcon>
-            <InputText v-model="search" placeholder="Buscar documentos..." class="w-full" />
+            <InputText
+              v-model="filters.global.value"
+              placeholder="Buscar documentos..."
+              class="w-full"
+            />
           </IconField>
         </div>
 
@@ -471,8 +479,8 @@ onMounted(loadAll);
         <DataTable
           v-else
           :value="visibleDocuments"
+          v-model:filters="filters"
           :global-filter-fields="['name']"
-          :globalFilter="search"
           :loading="isLoading"
           paginator
           :rows="10"
