@@ -9,6 +9,7 @@ import InputText from "primevue/inputtext";
 import IconField from "primevue/iconfield";
 import InputIcon from "primevue/inputicon";
 import ToggleSwitch from "primevue/toggleswitch";
+// ## Iconos:
 import UploadIcon from "~icons/material-symbols/upload-rounded";
 import LinkIcon from "~icons/material-symbols/link";
 import SearchIcon from "~icons/material-symbols/search";
@@ -17,6 +18,7 @@ import FolderOpenIcon from "~icons/material-symbols/folder-open-outline";
 import AddIcon from "~icons/material-symbols/add";
 import EditIcon from "~icons/material-symbols/edit-outline";
 import TrashIcon from "~icons/material-symbols/delete-outline";
+// ## Propios:
 import ApiService from "@/services/api";
 import { getErrorMessage } from "@/utils/apiError";
 import UploadDocumentDialog from "@/components/knowledge/UploadDocumentDialog.vue";
@@ -103,6 +105,19 @@ function getFolderName(folder_id) {
   return folder.name;
 }
 
+// Un documento está expirado si su fecha de expiración es hoy o anterior
+function isExpired(doc) {
+  if (!doc.expires_at) {
+    return false;
+  }
+  // Igualamos las horas a medianoche para comparar solo el día, no el momento exacto
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(doc.expires_at);
+  expiry.setHours(0, 0, 0, 0);
+  return expiry <= today;
+}
+
 // ### Apertura de diálogos que necesitan recordar sobre qué fila actúan:
 function openEditDialog(doc) {
   editingDocument.value = doc;
@@ -126,6 +141,7 @@ function onDocumentUploaded(newDocument) {
 }
 
 function onDocumentUpdated(updated) {
+  // Reemplazamos la fila local por la versión que devuelve el backend
   const index = documents.value.findIndex((d) => d.id === updated.id);
   if (index !== -1) {
     documents.value[index] = updated;
@@ -137,6 +153,7 @@ function onFolderCreated(newFolder) {
 }
 
 function onFolderUpdated(updated) {
+  // Lo único editable de una carpeta es el nombre, así que solo refrescamos ese campo
   const index = folders.value.findIndex((f) => f.id === updated.id);
   if (index !== -1) {
     folders.value[index].name = updated.name;
@@ -161,10 +178,11 @@ async function downloadDocument(doc) {
 }
 
 // ### Toggle activo:
-async function toggleActive(doc) {
-  // El valor del v-model ya viene cambiado, lo enviamos al backend para persistirlo
+async function toggleActive(doc, isActive) {
+  // Aplicamos el cambio en la UI de forma optimista antes de confirmarlo en el backend
+  doc.is_active = isActive;
   try {
-    const updated = await ApiService.toggleDocumentActive(doc.id, doc.is_active);
+    const updated = await ApiService.toggleDocumentActive(doc.id, isActive);
     // Reemplazamos el documento local con la fila devuelta por el backend
     const index = documents.value.findIndex((d) => d.id === doc.id);
     if (index !== -1) {
@@ -172,7 +190,7 @@ async function toggleActive(doc) {
     }
   } catch (error) {
     // Revertimos el cambio en la UI si el backend rechaza
-    doc.is_active = !doc.is_active;
+    doc.is_active = !isActive;
     toast.add({
       severity: "error",
       summary: "Error",
@@ -374,8 +392,11 @@ onMounted(loadAll);
           <span class="flex-1 text-left truncate">{{ folder.name }}</span>
           <span
             class="rounded-full px-2 text-xs min-w-[1.5rem] text-center"
-            :class="activeFolderId === folder.id ? 'bg-brand/20 text-brand' : 'bg-black/5 text-slate-600'"
-          >{{ documents.filter((d) => d.folder_id === folder.id).length }}</span>
+            :class="
+              activeFolderId === folder.id ? 'bg-brand/20 text-brand' : 'bg-black/5 text-slate-600'
+            "
+            >{{ documents.filter((d) => d.folder_id === folder.id).length }}</span
+          >
         </button>
       </aside>
 
@@ -495,7 +516,14 @@ onMounted(loadAll);
           <!-- Estado -->
           <Column header="Estado" style="width: 100px">
             <template #body="{ data }">
-              <ToggleSwitch v-model="data.is_active" @change="toggleActive(data)" />
+              <!-- El span lleva el title porque un switch deshabilitado no dispara el tooltip nativo -->
+              <span :title="isExpired(data) ? 'La fecha de expiración ha pasado' : null">
+                <ToggleSwitch
+                  :model-value="isExpired(data) ? false : data.is_active"
+                  :disabled="isExpired(data)"
+                  @update:model-value="(value) => toggleActive(data, value)"
+                />
+              </span>
             </template>
           </Column>
 
