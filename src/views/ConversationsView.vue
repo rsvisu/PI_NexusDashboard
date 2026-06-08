@@ -1,22 +1,42 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import IconField from "primevue/iconfield";
-import InputIcon from "primevue/inputicon";
+import DatePicker from "primevue/datepicker";
 import EyeIcon from "~icons/material-symbols/visibility-outline";
 import TrashIcon from "~icons/material-symbols/delete-outline";
 import ForumIcon from "~icons/material-symbols/forum-outline";
-import SearchIcon from "~icons/material-symbols/search";
 import ApiService from "@/services/api";
 
 // ## Variables:
 const conversations = ref([]);
-const search = ref("");
 const isLoading = ref(false);
 const error = ref(null);
+
+// Rango [desde, hasta] del DatePicker; null mientras no se filtra
+const dateRange = ref(null);
+
+// Conversaciones que caen dentro del rango de fechas elegido
+const filteredConversations = computed(() => {
+  if (!dateRange.value || !dateRange.value[0]) {
+    return conversations.value;
+  }
+  const start = new Date(dateRange.value[0]);
+  start.setHours(0, 0, 0, 0);
+  // Si solo se ha elegido la fecha de inicio, filtramos ese único día
+  let end;
+  if (dateRange.value[1]) {
+    end = new Date(dateRange.value[1]);
+  } else {
+    end = new Date(dateRange.value[0]);
+  }
+  end.setHours(23, 59, 59, 999);
+  return conversations.value.filter((conversation) => {
+    const started = new Date(conversation.started_at);
+    return started >= start && started <= end;
+  });
+});
 
 // ## Ciclo de vida:
 onMounted(async () => {
@@ -56,10 +76,34 @@ onMounted(async () => {
       v-else
       class="bg-white rounded-xl shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden"
     >
+      <!-- Barra con el filtro de fechas, siempre visible aunque la tabla quede vacía -->
+      <div class="px-4 py-4 border-b border-gray-100">
+        <DatePicker
+          v-model="dateRange"
+          selection-mode="range"
+          :manual-input="false"
+          date-format="dd/mm/yy"
+          placeholder="Filtrar por fecha"
+          show-icon
+          show-button-bar
+          class="w-full md:w-80"
+        />
+      </div>
+
+      <!-- Mensaje cuando el filtro de fechas no devuelve resultados -->
+      <div
+        v-if="!isLoading && filteredConversations.length === 0"
+        class="flex-1 flex flex-col items-center justify-center text-center p-8"
+      >
+        <ForumIcon class="text-5xl text-gray-300 mb-3" />
+        <p class="text-gray-700 font-medium mb-1">No hay conversaciones en estas fechas</p>
+        <p class="text-sm text-gray-500">Prueba a ampliar el rango o a limpiar el filtro</p>
+      </div>
+
+      <!-- Tabla -->
       <DataTable
-        :value="conversations"
-        :global-filter-fields="['id', 'first_message']"
-        :globalFilter="search"
+        v-else
+        :value="filteredConversations"
         paginator
         :rows="10"
         :rows-per-page-options="[10, 25, 50]"
@@ -68,20 +112,6 @@ onMounted(async () => {
         scroll-height="flex"
         class="flex-1 min-h-0"
       >
-        <template #header>
-          <div class="flex justify-start">
-            <IconField class="w-full md:w-80">
-              <InputIcon>
-                <SearchIcon class="text-gray-400" />
-              </InputIcon>
-              <InputText
-                v-model="search"
-                placeholder="Buscar en conversaciones..."
-                class="w-full"
-              />
-            </IconField>
-          </div>
-        </template>
         <!-- ID -->
         <Column field="id" header="ID">
           <template #body="{ data }">
@@ -89,34 +119,34 @@ onMounted(async () => {
           </template>
         </Column>
 
-        <!-- Started At -->
-        <Column field="started_at" header="Fecha y hora">
+        <!-- Inicio de la conversación, coincide con el primer mensaje -->
+        <Column field="started_at" header="Fecha de inicio">
           <template #body="{ data }">
             {{ new Date(data.started_at).toLocaleString("es-ES") }}
           </template>
         </Column>
 
-        <!-- First Message -->
+        <!-- Primer mensaje -->
         <Column field="first_message" header="Primer mensaje">
           <template #body="{ data }">
             <span class="text-gray-700">{{ data.first_message ?? "—" }}</span>
           </template>
         </Column>
 
-        <!-- Message Count -->
+        <!-- Número de mensajes -->
         <Column field="message_count" header="Mensajes" style="width: 100px; text-align: center" />
 
-        <!-- Actions -->
+        <!-- Acciones -->
         <Column header="Acciones" style="width: 100px">
           <template #body="{ data }">
             <div class="flex gap-2">
-              <!-- Button View -->
+              <!-- Botón ver -->
               <RouterLink :to="`/conversaciones/${data.id}`">
                 <Button severity="secondary" text rounded>
                   <template #icon><EyeIcon /></template>
                 </Button>
               </RouterLink>
-              <!-- Button Delete -->
+              <!-- Botón borrar -->
               <Button severity="danger" text rounded>
                 <template #icon><TrashIcon /></template>
               </Button>
