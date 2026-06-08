@@ -34,6 +34,11 @@ const router = createRouter({
           name: 'conversation-detail',
           component: () => import('../views/ConversationDetailView.vue'),
         },
+        {
+          path: 'conocimientos',
+          name: 'knowledge',
+          component: () => import('../views/KnowledgeView.vue'),
+        },
       ],
     },
     {
@@ -46,7 +51,7 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, from) => {
+router.beforeEach((to, _from) => {
   const authStore = useAuthStore()
 
   // Si la ruta requiere autenticación y no se autenticado, redirigir a login
