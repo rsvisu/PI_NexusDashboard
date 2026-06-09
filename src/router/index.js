@@ -39,6 +39,11 @@ const router = createRouter({
           name: 'knowledge',
           component: () => import('../views/KnowledgeView.vue'),
         },
+        {
+          path: 'feedback',
+          name: 'feedback',
+          component: () => import('../views/FeedbackView.vue'),
+        },
       ],
     },
     {

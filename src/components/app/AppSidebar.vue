@@ -5,6 +5,7 @@ import logoFace from "@/assets/logo.svg";
 import HomeIcon from "~icons/material-symbols/home-outline";
 import BookIcon from "~icons/material-symbols/menu-book-outline";
 import ChatIcon from "~icons/material-symbols/chat-bubble-outline";
+import FeedbackIcon from "~icons/material-symbols/reviews-outline";
 
 // ## Stores:
 const authStore = useAuthStore();
@@ -42,6 +43,10 @@ async function handleLogout() {
         <RouterLink to="/conversaciones" class="nav-link">
           <ChatIcon />
           Conversaciones
+        </RouterLink>
+        <RouterLink to="/feedback" class="nav-link">
+          <FeedbackIcon />
+          Feedback
         </RouterLink>
       </div>
     </nav>

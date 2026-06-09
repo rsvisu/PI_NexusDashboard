@@ -162,6 +162,17 @@ class ApiService {
   static async deleteFolder(id) {
     return del(`/api/folder/${id}`)
   }
+
+  // ## Feedback:
+  static async getFeedback() {
+    const data = await get('/api/feedback')
+    return data.feedback
+  }
+
+  static async markFeedbackReviewed(id) {
+    const data = await patch(`/api/feedback/${id}/reviewed`)
+    return data.feedback
+  }
 }
 
 export default ApiService
