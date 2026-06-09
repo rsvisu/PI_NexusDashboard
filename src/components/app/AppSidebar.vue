@@ -6,6 +6,7 @@ import HomeIcon from "~icons/material-symbols/home-outline";
 import BookIcon from "~icons/material-symbols/menu-book-outline";
 import ChatIcon from "~icons/material-symbols/chat-bubble-outline";
 import FeedbackIcon from "~icons/material-symbols/reviews-outline";
+import SettingsIcon from "~icons/material-symbols/settings-outline";
 
 // ## Stores:
 const authStore = useAuthStore();
@@ -47,6 +48,14 @@ async function handleLogout() {
         <RouterLink to="/feedback" class="nav-link">
           <FeedbackIcon />
           Feedback
+        </RouterLink>
+      </div>
+
+      <div>
+        <p class="text-xs text-slate-400 uppercase px-2 mb-1">Sistema</p>
+        <RouterLink to="/configuracion" class="nav-link">
+          <SettingsIcon />
+          Configuración
         </RouterLink>
       </div>
     </nav>

@@ -142,6 +142,15 @@ class ApiService {
     return del(`/api/document/${id}`)
   }
 
+  // ## Configuración:
+  static async getConfig() {
+    return get('/api/config')
+  }
+
+  static async updateConfig({ rate_limit_max, openai_api_key }) {
+    return patch('/api/config', { rate_limit_max, openai_api_key })
+  }
+
   // ## Carpetas:
   static async getFolders() {
     const data = await get('/api/folder')
