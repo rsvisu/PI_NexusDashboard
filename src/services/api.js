@@ -87,6 +87,10 @@ class ApiService {
     return get(`/api/conversation/${id}`)
   }
 
+  static async deleteConversation(id) {
+    return del(`/api/conversation/${id}`)
+  }
+
   // ## Documentos:
   static async getDocuments() {
     const data = await get('/api/document')

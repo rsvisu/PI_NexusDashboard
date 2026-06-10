@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
@@ -8,6 +10,10 @@ import EyeIcon from "~icons/material-symbols/visibility-outline";
 import TrashIcon from "~icons/material-symbols/delete-outline";
 import ForumIcon from "~icons/material-symbols/forum-outline";
 import ApiService from "@/services/api";
+
+// ## Servicios de PrimeVue:
+const toast = useToast();
+const confirm = useConfirm();
 
 // ## Variables:
 const conversations = ref([]);
@@ -37,6 +43,45 @@ const filteredConversations = computed(() => {
     return started >= start && started <= end;
   });
 });
+
+// ## Borrado de conversación:
+function confirmDeleteConversation(conversation) {
+  confirm.require({
+    message: `¿Seguro que quieres borrar la conversación #${conversation.id}? Esta acción es irreversible`,
+    header: "Borrar conversación",
+    rejectProps: {
+      label: "Cancelar",
+      severity: "secondary",
+      text: true,
+    },
+    acceptProps: {
+      label: "Borrar",
+      severity: "danger",
+    },
+    accept: () => deleteConversation(conversation),
+  });
+}
+
+async function deleteConversation(conversation) {
+  try {
+    await ApiService.deleteConversation(conversation.id);
+    conversations.value = conversations.value.filter((c) => c.id !== conversation.id);
+    toast.add({
+      severity: "success",
+      summary: "Conversación borrada",
+      detail: `Conversación #${conversation.id}`,
+      life: 3000,
+    });
+  } catch (e) {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "No se pudo borrar la conversación",
+      life: 3000,
+    });
+    console.error(e);
+  }
+}
 
 // ## Ciclo de vida:
 onMounted(async () => {
@@ -147,7 +192,7 @@ onMounted(async () => {
                 </Button>
               </RouterLink>
               <!-- Botón borrar -->
-              <Button severity="danger" text rounded>
+              <Button severity="danger" text rounded @click="confirmDeleteConversation(data)">
                 <template #icon><TrashIcon /></template>
               </Button>
             </div>
