@@ -5,6 +5,7 @@ import { useConfirm } from "primevue/useconfirm";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import Password from "primevue/password";
+import Textarea from "primevue/textarea";
 import Tag from "primevue/tag";
 import ApiService from "@/services/api";
 import { getErrorMessage } from "@/utils/apiError";
@@ -18,21 +19,44 @@ const isLoading = ref(true);
 const isSaving = ref(false);
 
 // ## Estado del formulario:
-const rateLimitMax = ref(10);
+// Saludo editable; "" significa "usar el default" del backend
+const greeting = ref("");
+// Límite de mensajes editable; null significa "usar el default" del backend
+const rateLimitMax = ref(null);
+// De la API key solo sabemos si hay una guardada; nunca la recibimos
 const apiKeySet = ref(false);
+// Clave nueva que escribe el admin; vacía = no cambiarla
 const newApiKey = ref("");
 const isDeletingApiKey = ref(false);
 
-// Último valor guardado del rate limit; lo usamos para revertir al cancelar
-const savedRateLimit = ref(10);
+// Defaults del backend; se muestran como placeholder cuando el campo está vacío
+const defaults = ref({ rate_limit_max: null, greeting: "" });
+
+// Última config recibida del backend; base para revertir al cancelar
+const loadedConfig = ref(null);
+
+// ## Funciones:
+/**
+ * Vuelca una respuesta de config del backend en los refs del formulario.
+ * @param {object} config - Respuesta de GET/PATCH /api/config
+ */
+function applyConfig(config) {
+  loadedConfig.value = config;
+  defaults.value = config.defaults;
+  apiKeySet.value = config.openai_api_key_set;
+  // El number se mapea tal cual: null del backend = InputNumber vacío
+  rateLimitMax.value = config.rate_limit_max;
+  // El textarea no admite null, así que lo convertimos a ""
+  greeting.value = config.greeting === null ? "" : config.greeting;
+  // Descartamos cualquier API key a medio escribir
+  newApiKey.value = "";
+}
 
 // ## Ciclo de vida:
 onMounted(async () => {
   try {
     const config = await ApiService.getConfig();
-    rateLimitMax.value = config.rate_limit_max;
-    savedRateLimit.value = config.rate_limit_max;
-    apiKeySet.value = config.openai_api_key_set;
+    applyConfig(config);
   } catch (error) {
     toast.add({
       severity: "error",
@@ -45,27 +69,26 @@ onMounted(async () => {
   }
 });
 
-// ## Funciones:
+/**
+ * Guarda la config editable y refresca el formulario con lo que devuelve el backend.
+ * Traduce el "vacío" del formulario al null que el backend trata como "usar el default".
+ */
 async function saveConfig() {
   isSaving.value = true;
 
-  // Solo enviamos la API key si se ha escrito una nueva; el campo vacío significa "no cambiar"
-  let apiKeyToSend;
-  if (newApiKey.value) {
-    apiKeyToSend = newApiKey.value;
-  } else {
-    apiKeyToSend = undefined;
-  }
+  // Saludo vacío => null para que el backend aplique el default
+  const greetingToSend = greeting.value.trim() === "" ? null : greeting.value;
+  // La API key solo se manda si se ha escrito una nueva; vacía => undefined (no tocar)
+  const apiKeyToSend = newApiKey.value === "" ? undefined : newApiKey.value;
 
   try {
     const updated = await ApiService.updateConfig({
       rate_limit_max: rateLimitMax.value,
+      greeting: greetingToSend,
       openai_api_key: apiKeyToSend,
     });
-    rateLimitMax.value = updated.rate_limit_max;
-    savedRateLimit.value = updated.rate_limit_max;
-    apiKeySet.value = updated.openai_api_key_set;
-    newApiKey.value = "";
+    // El backend responde con la config ya guardada; la reutilizamos para refrescar el formulario
+    applyConfig(updated);
     toast.add({
       severity: "success",
       summary: "Guardado",
@@ -84,10 +107,9 @@ async function saveConfig() {
   }
 }
 
-// Descarta los cambios sin guardar y vuelve a los valores guardados
+// Descarta los cambios sin guardar volviendo a la última config recibida del backend
 function cancel() {
-  rateLimitMax.value = savedRateLimit.value;
-  newApiKey.value = "";
+  applyConfig(loadedConfig.value);
 }
 
 function confirmDeleteApiKey() {
@@ -101,14 +123,24 @@ function confirmDeleteApiKey() {
   });
 }
 
+/**
+ * Borra la API key guardada de inmediato, sin esperar al botón Guardar.
+ */
 async function deleteApiKey() {
   isDeletingApiKey.value = true;
   // null borra la clave guardada
   try {
     const updated = await ApiService.updateConfig({ openai_api_key: null });
     apiKeySet.value = updated.openai_api_key_set;
+    // Sincronizamos loadedConfig para que un Cancelar posterior no resucite la clave borrada
+    loadedConfig.value = updated;
     newApiKey.value = "";
-    toast.add({ severity: "success", summary: "Eliminada", detail: "API key eliminada", life: 3000 });
+    toast.add({
+      severity: "success",
+      summary: "Eliminada",
+      detail: "API key eliminada",
+      life: 3000,
+    });
   } catch (error) {
     toast.add({
       severity: "error",
@@ -167,19 +199,40 @@ async function deleteApiKey() {
             </p>
           </div>
 
-          <!-- Límites de Uso -->
+          <!-- Mensaje de bienvenida -->
           <div class="flex flex-col gap-2 border-t border-gray-200 pt-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-2">Límites de Uso</h2>
-            <label class="text-base text-gray-600">Máximo de mensajes por IP / min</label>
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">Mensaje de bienvenida</h2>
+            <label class="text-base text-gray-600">Saludo inicial del asistente</label>
+            <Textarea
+              v-model="greeting"
+              rows="3"
+              auto-resize
+              maxlength="500"
+              :placeholder="defaults.greeting"
+              class="w-full max-w-2xl"
+            />
+            <p class="text-sm text-gray-500">
+              Es el primer mensaje que ve el usuario al abrir el chat. Máximo 500 caracteres. Déjalo
+              vacío para usar el saludo por defecto.
+            </p>
+          </div>
+
+          <!-- Límites de uso -->
+          <div class="flex flex-col gap-2 border-t border-gray-200 pt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">Límites de uso</h2>
+            <label class="text-base text-gray-600"
+              >Máximo de mensajes por IP / min (recomendado: {{ defaults.rate_limit_max }})</label
+            >
             <InputNumber
               v-model="rateLimitMax"
               :min="1"
               :max="1000"
-              :allow-empty="false"
+              :placeholder="String(defaults.rate_limit_max)"
               show-buttons
               class="w-full max-w-2xl"
               input-class="w-full"
             />
+            <p class="text-sm text-gray-500">Déjalo vacío para usar el valor por defecto.</p>
           </div>
         </div>
       </div>

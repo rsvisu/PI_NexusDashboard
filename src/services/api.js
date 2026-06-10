@@ -147,8 +147,8 @@ class ApiService {
     return get('/api/config')
   }
 
-  static async updateConfig({ rate_limit_max, openai_api_key }) {
-    return patch('/api/config', { rate_limit_max, openai_api_key })
+  static async updateConfig({ rate_limit_max, openai_api_key, greeting }) {
+    return patch('/api/config', { rate_limit_max, openai_api_key, greeting })
   }
 
   // ## Carpetas:
