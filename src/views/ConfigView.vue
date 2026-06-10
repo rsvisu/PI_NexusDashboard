@@ -4,9 +4,15 @@ import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
 import Password from "primevue/password";
 import Textarea from "primevue/textarea";
 import Tag from "primevue/tag";
+import Tabs from "primevue/tabs";
+import TabList from "primevue/tablist";
+import Tab from "primevue/tab";
+import TabPanels from "primevue/tabpanels";
+import TabPanel from "primevue/tabpanel";
 import ApiService from "@/services/api";
 import { getErrorMessage } from "@/utils/apiError";
 
@@ -28,6 +34,10 @@ const apiKeySet = ref(false);
 // Clave nueva que escribe el admin; vacía = no cambiarla
 const newApiKey = ref("");
 const isDeletingApiKey = ref(false);
+// Sugerencias de bienvenida clicables del widget; [] = no configuradas
+const suggestions = ref([]);
+// Texto del campo para añadir una nueva sugerencia
+const newSuggestion = ref("");
 
 // Defaults del backend; se muestran como placeholder cuando el campo está vacío
 const defaults = ref({ rate_limit_max: null, greeting: "" });
@@ -48,8 +58,11 @@ function applyConfig(config) {
   rateLimitMax.value = config.rate_limit_max;
   // El textarea no admite null, así que lo convertimos a ""
   greeting.value = config.greeting === null ? "" : config.greeting;
-  // Descartamos cualquier API key a medio escribir
+  // null en BD = sin sugerencias configuradas; spread para no compartir referencia con loadedConfig
+  suggestions.value = config.suggestions === null ? [] : [...config.suggestions];
+  // Descartamos cualquier API key o sugerencia a medio escribir
   newApiKey.value = "";
+  newSuggestion.value = "";
 }
 
 // ## Ciclo de vida:
@@ -80,12 +93,15 @@ async function saveConfig() {
   const greetingToSend = greeting.value.trim() === "" ? null : greeting.value;
   // La API key solo se manda si se ha escrito una nueva; vacía => undefined (no tocar)
   const apiKeyToSend = newApiKey.value === "" ? undefined : newApiKey.value;
+  // Sin sugerencias => null para limpiar el campo en BD
+  const suggestionsToSend = suggestions.value.length === 0 ? null : suggestions.value;
 
   try {
     const updated = await ApiService.updateConfig({
       rate_limit_max: rateLimitMax.value,
       greeting: greetingToSend,
       openai_api_key: apiKeyToSend,
+      suggestions: suggestionsToSend,
     });
     // El backend responde con la config ya guardada; la reutilizamos para refrescar el formulario
     applyConfig(updated);
@@ -110,6 +126,17 @@ async function saveConfig() {
 // Descarta los cambios sin guardar volviendo a la última config recibida del backend
 function cancel() {
   applyConfig(loadedConfig.value);
+}
+
+function addSuggestion() {
+  const text = newSuggestion.value.trim();
+  if (!text || suggestions.value.length >= 5) return;
+  suggestions.value.push(text);
+  newSuggestion.value = "";
+}
+
+function removeSuggestion(index) {
+  suggestions.value.splice(index, 1);
 }
 
 function confirmDeleteApiKey() {
@@ -157,8 +184,12 @@ async function deleteApiKey() {
 <template>
   <div class="flex flex-col h-full">
     <!-- Header -->
-    <div class="mb-6">
+    <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-semibold text-gray-800">Configuración General</h1>
+      <div v-if="!isLoading" class="flex gap-2">
+        <Button label="Cancelar" severity="secondary" :disabled="isSaving" @click="cancel" />
+        <Button label="Guardar" :loading="isSaving" @click="saveConfig" />
+      </div>
     </div>
 
     <!-- Esqueleto de carga -->
@@ -166,82 +197,167 @@ async function deleteApiKey() {
 
     <!-- Contenido -->
     <template v-else>
-      <div class="flex-1 overflow-y-auto">
-        <div class="bg-white rounded-xl shadow-sm p-6 flex flex-col gap-6">
-          <!-- Configuración de API -->
-          <div class="flex flex-col gap-2">
-            <h2 class="text-lg font-semibold text-gray-800 mb-2">Configuración de API</h2>
-            <div class="flex items-center gap-3">
-              <label class="text-base text-gray-600">Clave de API de OpenAI</label>
-              <Tag v-if="apiKeySet" value="Configurada" severity="success" />
-              <Tag v-else value="Sin configurar" severity="warn" />
-              <Button
-                v-if="apiKeySet"
-                label="Eliminar"
-                severity="danger"
-                text
-                size="small"
-                :loading="isDeletingApiKey"
-                @click="confirmDeleteApiKey"
-              />
-            </div>
-            <Password
-              v-model="newApiKey"
-              :feedback="false"
-              toggle-mask
-              placeholder="sk-..."
-              class="w-full max-w-2xl"
-              input-class="w-full"
-            />
-            <p class="text-sm text-gray-500">
-              La clave se almacena cifrada en la base de datos y nunca se muestra. Déjala vacía para
-              mantener la actual.
-            </p>
-          </div>
+      <section class="bg-white rounded-xl shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+        <Tabs value="widget" class="flex flex-col flex-1 min-h-0">
+          <TabList class="px-4">
+            <Tab value="widget">Widget</Tab>
+            <Tab value="tecnico">Técnico</Tab>
+          </TabList>
 
-          <!-- Mensaje de bienvenida -->
-          <div class="flex flex-col gap-2 border-t border-gray-200 pt-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-2">Mensaje de bienvenida</h2>
-            <label class="text-base text-gray-600">Saludo inicial del asistente</label>
-            <Textarea
-              v-model="greeting"
-              rows="3"
-              auto-resize
-              maxlength="500"
-              :placeholder="defaults.greeting"
-              class="w-full max-w-2xl"
-            />
-            <p class="text-sm text-gray-500">
-              Es el primer mensaje que ve el usuario al abrir el chat. Máximo 500 caracteres. Déjalo
-              vacío para usar el saludo por defecto.
-            </p>
-          </div>
+          <TabPanels class="flex-1 overflow-y-auto">
+            <!-- Pestaña Widget -->
+            <TabPanel value="widget" class="px-4 py-5 flex flex-col gap-5">
+              <!-- Mensaje de bienvenida -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pb-5 border-b border-gray-100">
+                <div class="md:col-span-1">
+                  <h3 class="text-base font-semibold text-gray-800">Mensaje de bienvenida</h3>
+                  <p class="text-sm text-gray-500 mt-1">
+                    El saludo inicial del asistente. Déjalo vacío para usar el valor por defecto.
+                  </p>
+                </div>
+                <div class="md:col-span-2 flex flex-col gap-3">
+                  <Textarea
+                    v-model="greeting"
+                    rows="3"
+                    auto-resize
+                    maxlength="500"
+                    :placeholder="defaults.greeting"
+                    class="w-full max-w-xl"
+                  />
+                </div>
+              </div>
 
-          <!-- Límites de uso -->
-          <div class="flex flex-col gap-2 border-t border-gray-200 pt-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-2">Límites de uso</h2>
-            <label class="text-base text-gray-600"
-              >Máximo de mensajes por IP / min (recomendado: {{ defaults.rate_limit_max }})</label
-            >
-            <InputNumber
-              v-model="rateLimitMax"
-              :min="1"
-              :max="1000"
-              :placeholder="String(defaults.rate_limit_max)"
-              show-buttons
-              class="w-full max-w-2xl"
-              input-class="w-full"
-            />
-            <p class="text-sm text-gray-500">Déjalo vacío para usar el valor por defecto.</p>
-          </div>
-        </div>
-      </div>
+              <!-- Sugerencias de bienvenida -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-1">
+                  <h3 class="text-base font-semibold text-gray-800">Sugerencias (FAQ)</h3>
+                  <p class="text-sm text-gray-500 mt-1">
+                    Preguntas predefinidas que aparecen antes del primer mensaje del usuario.
+                  </p>
+                </div>
+                <div class="md:col-span-2 flex flex-col gap-3">
+                  <!-- Campo para añadir una nueva -->
+                  <div class="flex flex-col gap-1 w-full max-w-xl">
+                    <div class="flex gap-2">
+                      <InputText
+                        v-model="newSuggestion"
+                        :placeholder="
+                          suggestions.length >= 5
+                            ? 'Límite máximo alcanzado'
+                            : 'Escribe una nueva sugerencia...'
+                        "
+                        class="flex-1"
+                        @keydown.enter.prevent="addSuggestion"
+                        :disabled="suggestions.length >= 5"
+                      />
+                      <Button
+                        label="Añadir"
+                        severity="secondary"
+                        @click="addSuggestion"
+                        :disabled="!newSuggestion.trim() || suggestions.length >= 5"
+                      />
+                    </div>
+                    <div class="flex justify-between items-center mt-2 px-1">
+                      <span class="text-xs text-gray-500 font-medium">LISTA DE SUGERENCIAS</span>
+                      <span
+                        class="text-xs"
+                        :class="
+                          suggestions.length >= 5 ? 'text-orange-500 font-medium' : 'text-gray-400'
+                        "
+                      >
+                        {{ suggestions.length }} / 5
+                      </span>
+                    </div>
+                  </div>
 
-      <!-- Barra de acciones -->
-      <div class="mt-4 pt-4 border-t border-gray-200 flex justify-end gap-2">
-        <Button label="Cancelar" severity="secondary" :disabled="isSaving" @click="cancel" />
-        <Button label="Guardar" :loading="isSaving" @click="saveConfig" />
-      </div>
+                  <!-- Lista de sugerencias actuales -->
+                  <div
+                    v-if="suggestions.length > 0"
+                    class="flex flex-col gap-2 w-full max-w-xl -mt-1"
+                  >
+                    <div
+                      v-for="(suggestion, index) in suggestions"
+                      :key="index"
+                      class="flex items-center justify-between gap-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700"
+                    >
+                      <span class="break-words line-clamp-2 leading-relaxed">{{ suggestion }}</span>
+                      <button
+                        type="button"
+                        class="text-gray-400 hover:text-red-500 transition-colors cursor-pointer text-lg leading-none flex-shrink-0 font-medium px-1"
+                        title="Eliminar sugerencia"
+                        @click="removeSuggestion(index)"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  <p v-else class="text-sm text-gray-400 italic pl-1 -mt-1">
+                    No hay sugerencias configuradas.
+                  </p>
+                </div>
+              </div>
+            </TabPanel>
+
+            <!-- Pestaña Técnico -->
+            <TabPanel value="tecnico" class="px-4 py-5 flex flex-col gap-5">
+              <!-- API de OpenAI -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pb-5 border-b border-gray-100">
+                <div class="md:col-span-1">
+                  <h3 class="text-base font-semibold text-gray-800">API de OpenAI</h3>
+                  <p class="text-sm text-gray-500 mt-1">
+                    Clave necesaria para generar respuestas. Se almacena de forma segura.
+                  </p>
+                </div>
+                <div class="md:col-span-2 flex flex-col gap-3">
+                  <div class="flex items-center gap-3">
+                    <Tag v-if="apiKeySet" value="Configurada" severity="success" />
+                    <Tag v-else value="Sin configurar" severity="warn" />
+                    <Button
+                      v-if="apiKeySet"
+                      label="Eliminar"
+                      severity="danger"
+                      text
+                      size="small"
+                      :loading="isDeletingApiKey"
+                      @click="confirmDeleteApiKey"
+                    />
+                  </div>
+                  <Password
+                    v-model="newApiKey"
+                    :feedback="false"
+                    toggle-mask
+                    placeholder="sk-... (dejar en blanco para no cambiar)"
+                    class="w-full max-w-md"
+                    input-class="w-full"
+                  />
+                </div>
+              </div>
+
+              <!-- Límites de uso -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-1">
+                  <h3 class="text-base font-semibold text-gray-800">Límites de uso</h3>
+                  <p class="text-sm text-gray-500 mt-1">
+                    Máximo de mensajes por IP / min (por defecto: {{ defaults.rate_limit_max }}).
+                  </p>
+                </div>
+                <div class="md:col-span-2 flex flex-col gap-3 justify-center">
+                  <InputNumber
+                    v-model="rateLimitMax"
+                    :min="1"
+                    :max="1000"
+                    :placeholder="String(defaults.rate_limit_max)"
+                    show-buttons
+                    class="w-full max-w-[12rem]"
+                    input-class="w-full"
+                  />
+                </div>
+              </div>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+      </section>
+
     </template>
   </div>
 </template>
