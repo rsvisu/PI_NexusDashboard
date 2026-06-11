@@ -176,6 +176,11 @@ class ApiService {
     return del(`/api/folder/${id}`)
   }
 
+  // ## Estadísticas:
+  static async getStats() {
+    return get('/api/stats')
+  }
+
   // ## Feedback:
   static async getFeedback() {
     const data = await get('/api/feedback')
