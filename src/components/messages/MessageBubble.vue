@@ -42,7 +42,6 @@ const messageClasses = computed(() =>
     : "bg-gray-100 text-gray-800 rounded-bl-sm",
 );
 
-// pl-11/pr-11 = ancho avatar (w-9 = 36px) + gap (gap-2 = 8px) = 44px
 const timeRowClasses = computed(() => (isUserMessage.value ? "justify-end pr-11" : "pl-11"));
 
 // ## Funciones:
@@ -74,10 +73,10 @@ function formatTime(dateStr) {
 <template>
   <div class="group mt-2 max-w-[90%] flex flex-col" :class="bubbleClasses">
     <!-- Avatar + message -->
-    <div class="flex items-center gap-2" :class="rowClasses">
+    <div class="flex items-start gap-2" :class="rowClasses">
       <!-- Avatar-->
       <div
-        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white"
+        class="shrink-0 w-9 h-9 mt-1 rounded-full flex items-center justify-center text-white"
         :class="avatarClasses"
       >
         <PersonIcon v-if="isUserMessage" class="size-5" />
