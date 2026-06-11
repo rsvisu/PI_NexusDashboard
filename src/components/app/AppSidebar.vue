@@ -1,5 +1,6 @@
 <script setup>
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute } from "vue-router";
+import { computed } from "vue";
 import { useAuthStore } from "@/stores/auth.js";
 import logoFace from "@/assets/logo.svg";
 import HomeIcon from "~icons/material-symbols/home-outline";
@@ -10,6 +11,14 @@ import SettingsIcon from "~icons/material-symbols/settings-outline";
 
 // ## Stores:
 const authStore = useAuthStore();
+
+// ## Ruta activa:
+const route = useRoute()
+
+// router-link-active no se activa en rutas hermanas, solo en hijas; usamos meta.section
+const isConversacionesActive = computed(() => {
+  return route.meta.section === 'conversaciones'
+})
 
 // ## Funciones:
 async function handleLogout() {
@@ -41,7 +50,7 @@ async function handleLogout() {
 
       <div>
         <p class="text-xs text-slate-400 uppercase px-2 mb-1">Gestión</p>
-        <RouterLink to="/conversaciones" class="nav-link">
+        <RouterLink to="/conversaciones" class="nav-link" :class="{ 'router-link-active': isConversacionesActive }">
           <ChatIcon />
           Conversaciones
         </RouterLink>

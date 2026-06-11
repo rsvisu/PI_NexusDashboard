@@ -28,11 +28,13 @@ const router = createRouter({
           path: 'conversaciones',
           name: 'conversations',
           component: () => import('../views/ConversationsView.vue'),
+          meta: { section: 'conversaciones' },
         },
         {
           path: 'conversaciones/:id',
           name: 'conversation-detail',
           component: () => import('../views/ConversationDetailView.vue'),
+          meta: { section: 'conversaciones' },
         },
         {
           path: 'conocimientos',
