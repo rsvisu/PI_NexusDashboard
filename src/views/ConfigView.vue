@@ -33,6 +33,8 @@ const rateLimitMax = ref(null);
 const apiKeySet = ref(false);
 // Clave nueva que escribe el admin; vacía = no cambiarla
 const newApiKey = ref("");
+// Prompt de sistema editable; "" significa "usar el default" del backend
+const systemPrompt = ref("");
 const isDeletingApiKey = ref(false);
 // Sugerencias de bienvenida clicables del widget; [] = no configuradas
 const suggestions = ref([]);
@@ -60,6 +62,8 @@ function applyConfig(config) {
   greeting.value = config.greeting === null ? "" : config.greeting;
   // null en BD = sin sugerencias configuradas; spread para no compartir referencia con loadedConfig
   suggestions.value = config.suggestions === null ? [] : [...config.suggestions];
+  // null en BD = el LLM usa el default de defaults.js
+  systemPrompt.value = config.system_prompt === null ? "" : config.system_prompt;
   // Descartamos cualquier API key o sugerencia a medio escribir
   newApiKey.value = "";
   newSuggestion.value = "";
@@ -95,6 +99,8 @@ async function saveConfig() {
   const apiKeyToSend = newApiKey.value === "" ? undefined : newApiKey.value;
   // Sin sugerencias => null para limpiar el campo en BD
   const suggestionsToSend = suggestions.value.length === 0 ? null : suggestions.value;
+  // Prompt vacío => null para que el backend aplique el default
+  const systemPromptToSend = systemPrompt.value.trim() === "" ? null : systemPrompt.value;
 
   try {
     const updated = await ApiService.updateConfig({
@@ -102,6 +108,7 @@ async function saveConfig() {
       greeting: greetingToSend,
       openai_api_key: apiKeyToSend,
       suggestions: suggestionsToSend,
+      system_prompt: systemPromptToSend,
     });
     // El backend responde con la config ya guardada; la reutilizamos para refrescar el formulario
     applyConfig(updated);
@@ -334,7 +341,7 @@ async function deleteApiKey() {
               </div>
 
               <!-- Límites de uso -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pb-5 border-b border-gray-100">
                 <div class="md:col-span-1">
                   <h3 class="text-base font-semibold text-gray-800">Límites de uso</h3>
                   <p class="text-sm text-gray-500 mt-1">
@@ -353,11 +360,42 @@ async function deleteApiKey() {
                   />
                 </div>
               </div>
+
+              <!-- Prompt de sistema -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-1">
+                  <h3 class="text-base font-semibold text-gray-800">Prompt de sistema</h3>
+                  <p class="text-sm text-gray-500 mt-1">
+                    Instrucciones base que recibe el LLM en cada conversación.
+                  </p>
+                  <p class="text-sm text-amber-600 mt-2">
+                    Es imprescindible tener un prompt configurado. Sin él, el asistente no tiene
+                    contexto sobre el centro ni reglas de comportamiento y sus respuestas serán
+                    genéricas o incorrectas.
+                  </p>
+                  <a
+                    href="https://developers.openai.com/api/docs/guides/prompt-engineering"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-sm text-gray-600 hover:text-gray-700 hover:underline mt-1 inline-block transition-colors"
+                    >Guía de prompt engineering →</a
+                  >
+                </div>
+                <div class="md:col-span-2 flex flex-col gap-3">
+                  <Textarea
+                    v-model="systemPrompt"
+                    rows="14"
+                    auto-resize
+                    maxlength="8000"
+                    class="w-full"
+                  />
+                  <p class="text-xs text-gray-400">{{ systemPrompt.length }} / 8000 caracteres</p>
+                </div>
+              </div>
             </TabPanel>
           </TabPanels>
         </Tabs>
       </section>
-
     </template>
   </div>
 </template>
