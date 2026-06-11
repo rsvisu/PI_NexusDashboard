@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { marked } from "marked";
 import { useToast } from "primevue/usetoast";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -89,6 +90,14 @@ async function markReviewed(item) {
     });
     console.error(e);
   }
+}
+
+// Extrae el texto plano del markdown para mostrarlo en la preview de la tabla
+function plainText(markdown) {
+  const html = marked.parse(markdown)
+  const div = document.createElement('div')
+  div.innerHTML = html
+  return div.textContent || ''
 }
 
 // ## Ciclo de vida:
@@ -191,7 +200,7 @@ onMounted(async () => {
           <!-- Respuesta votada -->
           <Column field="message_content" header="Respuesta del asistente">
             <template #body="{ data }">
-              <span class="text-gray-700 line-clamp-2">{{ data.message_content }}</span>
+              <span class="text-gray-700 line-clamp-2">{{ plainText(data.message_content) }}</span>
             </template>
           </Column>
 
