@@ -11,7 +11,6 @@ import InputIcon from "primevue/inputicon";
 import ToggleSwitch from "primevue/toggleswitch";
 // ## Iconos:
 import UploadIcon from "~icons/material-symbols/upload-rounded";
-import LinkIcon from "~icons/material-symbols/link";
 import SearchIcon from "~icons/material-symbols/search";
 import FolderIcon from "~icons/material-symbols/folder-outline";
 import FolderOpenIcon from "~icons/material-symbols/folder-open-outline";
@@ -311,15 +310,6 @@ onMounted(loadAll);
         <Button label="Subir documento" severity="primary" @click="showUploadDialog = true">
           <template #icon><UploadIcon /></template>
         </Button>
-        <Button
-          label="Añadir URL"
-          severity="secondary"
-          outlined
-          disabled
-          title="Pendiente de implementar scraping"
-        >
-          <template #icon><LinkIcon /></template>
-        </Button>
       </div>
     </div>
 
@@ -498,11 +488,8 @@ onMounted(loadAll);
               >
                 {{ data.name }}
               </button>
-              <div class="text-xs text-gray-500 mt-0.5">
-                {{ data.source_type.toUpperCase() }}
-                <template v-if="getFolderName(data.folder_id)">
-                  / {{ getFolderName(data.folder_id) }}
-                </template>
+              <div v-if="getFolderName(data.folder_id)" class="text-xs text-gray-500 mt-0.5">
+                {{ getFolderName(data.folder_id) }}
               </div>
             </template>
           </Column>
